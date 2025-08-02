@@ -4,263 +4,262 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 
-namespace PingApp.ViewModels
+namespace PingApp.ViewModels;
+
+public class SettingsViewModel : INotifyPropertyChanged
 {
-    public class SettingsViewModel : INotifyPropertyChanged
+    private bool _animateCharts = true;
+    private bool _autoScaleCharts = true;
+    private bool _autoStartWindows;
+    private bool _confirmExit = true;
+    private string _logFormat = "CSV";
+    private string _logPath = @"C:\ping_logs\";
+    private bool _minimizeOnStart;
+    private string _newHost;
+    private int _packetSize = 32;
+    private int _pingInterval = 1000;
+    private bool _saveLogs = true;
+    private string _theme = "Светлая";
+    private int _timeout = 5000;
+
+    public SettingsViewModel()
     {
-        private string _newHost;
-        private bool _autoStartWindows;
-        private bool _minimizeOnStart = false;
-        private bool _confirmExit = true;
-        private string _theme = "Светлая";
-        private bool _autoScaleCharts = true;
-        private bool _animateCharts = true;
-        private int _pingInterval = 1000;
-        private int _timeout = 5000;
-        private int _packetSize = 32;
-        private bool _saveLogs = true;
-        private string _logPath = @"C:\ping_logs\";
-        private string _logFormat = "CSV";
+        InitializeCollections();
+        InitializeCommands();
+        LoadDefaultSettings();
+    }
 
-        public ObservableCollection<string> AvailableHosts { get; set; }
-        public ObservableCollection<string> Themes { get; set; }
-        public ObservableCollection<string> LogFormats { get; set; }
+    public ObservableCollection<string> AvailableHosts { get; set; }
+    public ObservableCollection<string> Themes { get; set; }
+    public ObservableCollection<string> LogFormats { get; set; }
 
-        public ICommand AddHostCommand { get; set; }
-        public ICommand RemoveHostCommand { get; set; }
-        public ICommand SaveSettingsCommand { get; set; }
-        public ICommand CancelSettingsCommand { get; set; }
-        public ICommand BrowseLogPathCommand { get; set; }
+    public ICommand AddHostCommand { get; set; }
+    public ICommand RemoveHostCommand { get; set; }
+    public ICommand SaveSettingsCommand { get; set; }
+    public ICommand CancelSettingsCommand { get; set; }
+    public ICommand BrowseLogPathCommand { get; set; }
 
-        public SettingsViewModel()
+    // Свойства с уведомлением об изменениях
+    public string NewHost
+    {
+        get => _newHost;
+        set
         {
-            InitializeCollections();
-            InitializeCommands();
-            LoadDefaultSettings();
+            _newHost = value;
+            OnPropertyChanged();
+            ((RelayCommand)AddHostCommand).NotifyCanExecuteChanged();
         }
+    }
 
-        private void InitializeCollections()
+    public bool AutoStartWindows
+    {
+        get => _autoStartWindows;
+        set
         {
-            AvailableHosts = new ObservableCollection<string>
-            {
-                "google.com",
-                "yandex.ru",
-                "github.com",
-                "microsoft.com"
-            };
-
-            Themes = new ObservableCollection<string>
-            {
-                "Светлая",
-                "Темная",
-                "Синяя"
-            };
-
-            LogFormats = new ObservableCollection<string>
-            {
-                "CSV",
-                "JSON",
-                "XML"
-            };
+            _autoStartWindows = value;
+            OnPropertyChanged();
         }
+    }
 
-        private void InitializeCommands()
+    public bool MinimizeOnStart
+    {
+        get => _minimizeOnStart;
+        set
         {
-            AddHostCommand = new RelayCommand(AddHost, CanAddHost);
-            RemoveHostCommand = new RelayCommand<string>(RemoveHost);
-            SaveSettingsCommand = new RelayCommand(SaveSettings);
-            CancelSettingsCommand = new RelayCommand(CancelSettings);
-            BrowseLogPathCommand = new RelayCommand(BrowseLogPath);
+            _minimizeOnStart = value;
+            OnPropertyChanged();
         }
+    }
 
-        private void LoadDefaultSettings()
+    public bool ConfirmExit
+    {
+        get => _confirmExit;
+        set
         {
-            AutoStartWindows = false;
-            MinimizeOnStart = false;
-            ConfirmExit = true;
-            Theme = "Светлая";
-            AutoScaleCharts = true;
-            AnimateCharts = true;
-            PingInterval = 1000;
-            Timeout = 5000;
-            PacketSize = 32;
-            SaveLogs = true;
-            LogPath = @"C:\ping_logs\";
-            LogFormat = "CSV";
+            _confirmExit = value;
+            OnPropertyChanged();
         }
+    }
 
-        private void AddHost()
+    public string Theme
+    {
+        get => _theme;
+        set
         {
-            if (!string.IsNullOrEmpty(NewHost) && !AvailableHosts.Contains(NewHost))
-            {
-                AvailableHosts.Add(NewHost);
-                NewHost = string.Empty;
-                OnPropertyChanged(nameof(NewHost));
-            }
+            _theme = value;
+            OnPropertyChanged();
         }
+    }
 
-        private bool CanAddHost() => !string.IsNullOrEmpty(NewHost);
-
-        private void RemoveHost(string host)
+    public bool AutoScaleCharts
+    {
+        get => _autoScaleCharts;
+        set
         {
-            if (!string.IsNullOrEmpty(host) && AvailableHosts.Contains(host))
-            {
-                AvailableHosts.Remove(host);
-            }
+            _autoScaleCharts = value;
+            OnPropertyChanged();
         }
+    }
 
-        private void SaveSettings()
+    public bool AnimateCharts
+    {
+        get => _animateCharts;
+        set
         {
-            // Здесь будет логика сохранения настроек
+            _animateCharts = value;
+            OnPropertyChanged();
         }
+    }
 
-        private void CancelSettings()
+    public int PingInterval
+    {
+        get => _pingInterval;
+        set
         {
-            // Здесь будет логика отмены изменений
+            _pingInterval = value;
+            OnPropertyChanged();
         }
+    }
 
-        private void BrowseLogPath()
+    public int Timeout
+    {
+        get => _timeout;
+        set
         {
-            // Здесь будет логика выбора пути для логов
+            _timeout = value;
+            OnPropertyChanged();
         }
+    }
 
-        // Свойства с уведомлением об изменениях
-        public string NewHost
+    public int PacketSize
+    {
+        get => _packetSize;
+        set
         {
-            get => _newHost;
-            set
-            {
-                _newHost = value;
-                OnPropertyChanged();
-                ((RelayCommand)AddHostCommand).NotifyCanExecuteChanged();
-            }
+            _packetSize = value;
+            OnPropertyChanged();
         }
+    }
 
-        public bool AutoStartWindows
+    public bool SaveLogs
+    {
+        get => _saveLogs;
+        set
         {
-            get => _autoStartWindows;
-            set
-            {
-                _autoStartWindows = value;
-                OnPropertyChanged();
-            }
+            _saveLogs = value;
+            OnPropertyChanged();
         }
+    }
 
-        public bool MinimizeOnStart
+    public string LogPath
+    {
+        get => _logPath;
+        set
         {
-            get => _minimizeOnStart;
-            set
-            {
-                _minimizeOnStart = value;
-                OnPropertyChanged();
-            }
+            _logPath = value;
+            OnPropertyChanged();
         }
+    }
 
-        public bool ConfirmExit
+    public string LogFormat
+    {
+        get => _logFormat;
+        set
         {
-            get => _confirmExit;
-            set
-            {
-                _confirmExit = value;
-                OnPropertyChanged();
-            }
+            _logFormat = value;
+            OnPropertyChanged();
         }
+    }
 
-        public string Theme
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    private void InitializeCollections()
+    {
+        AvailableHosts = new ObservableCollection<string>
         {
-            get => _theme;
-            set
-            {
-                _theme = value;
-                OnPropertyChanged();
-            }
-        }
+            "google.com",
+            "yandex.ru",
+            "github.com",
+            "microsoft.com"
+        };
 
-        public bool AutoScaleCharts
+        Themes = new ObservableCollection<string>
         {
-            get => _autoScaleCharts;
-            set
-            {
-                _autoScaleCharts = value;
-                OnPropertyChanged();
-            }
-        }
+            "Светлая",
+            "Темная",
+            "Синяя"
+        };
 
-        public bool AnimateCharts
+        LogFormats = new ObservableCollection<string>
         {
-            get => _animateCharts;
-            set
-            {
-                _animateCharts = value;
-                OnPropertyChanged();
-            }
-        }
+            "CSV",
+            "JSON",
+            "XML"
+        };
+    }
 
-        public int PingInterval
+    private void InitializeCommands()
+    {
+        AddHostCommand = new RelayCommand(AddHost, CanAddHost);
+        RemoveHostCommand = new RelayCommand<string>(RemoveHost);
+        SaveSettingsCommand = new RelayCommand(SaveSettings);
+        CancelSettingsCommand = new RelayCommand(CancelSettings);
+        BrowseLogPathCommand = new RelayCommand(BrowseLogPath);
+    }
+
+    private void LoadDefaultSettings()
+    {
+        AutoStartWindows = false;
+        MinimizeOnStart = false;
+        ConfirmExit = true;
+        Theme = "Светлая";
+        AutoScaleCharts = true;
+        AnimateCharts = true;
+        PingInterval = 1000;
+        Timeout = 5000;
+        PacketSize = 32;
+        SaveLogs = true;
+        LogPath = @"C:\ping_logs\";
+        LogFormat = "CSV";
+    }
+
+    private void AddHost()
+    {
+        if (!string.IsNullOrEmpty(NewHost) && !AvailableHosts.Contains(NewHost))
         {
-            get => _pingInterval;
-            set
-            {
-                _pingInterval = value;
-                OnPropertyChanged();
-            }
+            AvailableHosts.Add(NewHost);
+            NewHost = string.Empty;
+            OnPropertyChanged(nameof(NewHost));
         }
+    }
 
-        public int Timeout
-        {
-            get => _timeout;
-            set
-            {
-                _timeout = value;
-                OnPropertyChanged();
-            }
-        }
+    private bool CanAddHost()
+    {
+        return !string.IsNullOrEmpty(NewHost);
+    }
 
-        public int PacketSize
-        {
-            get => _packetSize;
-            set
-            {
-                _packetSize = value;
-                OnPropertyChanged();
-            }
-        }
+    private void RemoveHost(string host)
+    {
+        if (!string.IsNullOrEmpty(host) && AvailableHosts.Contains(host)) AvailableHosts.Remove(host);
+    }
 
-        public bool SaveLogs
-        {
-            get => _saveLogs;
-            set
-            {
-                _saveLogs = value;
-                OnPropertyChanged();
-            }
-        }
+    private void SaveSettings()
+    {
+        // Здесь будет логика сохранения настроек
+    }
 
-        public string LogPath
-        {
-            get => _logPath;
-            set
-            {
-                _logPath = value;
-                OnPropertyChanged();
-            }
-        }
+    private void CancelSettings()
+    {
+        // Здесь будет логика отмены изменений
+    }
 
-        public string LogFormat
-        {
-            get => _logFormat;
-            set
-            {
-                _logFormat = value;
-                OnPropertyChanged();
-            }
-        }
+    private void BrowseLogPath()
+    {
+        // Здесь будет логика выбора пути для логов
+    }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

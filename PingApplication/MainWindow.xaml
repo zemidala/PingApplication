@@ -47,7 +47,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="График пинга" FontWeight="Bold" Margin="5" HorizontalAlignment="Center"/>
+                        <TextBlock Name="CurrentHostTextBlock" Text="График пинга" FontWeight="Bold" Margin="5" HorizontalAlignment="Center"/>
                         <Canvas Name="MainPingCanvas" Grid.Row="1" Background="LightGray"/>
                     </Grid>
                 </Border>
@@ -68,7 +68,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Text="График прогресса" FontWeight="Bold" Margin="5" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Прогресс" FontWeight="Bold" Margin="5" HorizontalAlignment="Center"/>
                             <Canvas Name="ProgressCanvas" Grid.Row="1" Background="LightGray"/>
                         </Grid>
                     </Border>
@@ -80,7 +80,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Text="График количества пингов" FontWeight="Bold" Margin="5" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Количество &quot;пингов&quot;" FontWeight="Bold" Margin="5" HorizontalAlignment="Center"/>
                             <Canvas Name="StatisticsCanvas" Grid.Row="1" Background="LightGray"/>
                         </Grid>
                     </Border>

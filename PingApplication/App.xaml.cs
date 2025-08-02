@@ -4,29 +4,28 @@ using PingApp.Interfaces;
 using PingApp.Services;
 using PingApp.ViewModels;
 
-namespace PingApp
+namespace PingApp;
+
+public partial class App : Application
 {
-    public partial class App : Application
+    public static IServiceProvider ServiceProvider { get; private set; }
+
+    private void Application_Startup(object sender, StartupEventArgs e)
     {
-        public static IServiceProvider ServiceProvider { get; private set; }
+        var serviceCollection = new ServiceCollection();
+        ConfigureServices(serviceCollection);
+        ServiceProvider = serviceCollection.BuildServiceProvider();
 
-        private void Application_Startup(object sender, StartupEventArgs e)
-        {
-            var serviceCollection = new ServiceCollection();
-            ConfigureServices(serviceCollection);
-            ServiceProvider = serviceCollection.BuildServiceProvider();
+        // Создаем и показываем только одно главное окно
+        var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+        mainWindow.Show();
+    }
 
-            // Создаем и показываем только одно главное окно
-            var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
-            mainWindow.Show();
-        }
-
-        private void ConfigureServices(IServiceCollection services)
-        {
-            services.AddSingleton<IPingService, PingService>();
-            services.AddSingleton<IPingStatisticsService, PingStatisticsService>();
-            services.AddSingleton<MainViewModel>();
-            services.AddSingleton<MainWindow>();
-        }
+    private void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<IPingService, PingService>();
+        services.AddSingleton<IPingStatisticsService, PingStatisticsService>();
+        services.AddSingleton<MainViewModel>();
+        services.AddSingleton<MainWindow>();
     }
 }

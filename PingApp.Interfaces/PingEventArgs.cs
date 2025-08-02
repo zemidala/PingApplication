@@ -1,11 +1,9 @@
-﻿using System;
-using PingApp.Models;
+﻿using PingApp.Models;
 
-namespace PingApp.Interfaces
+namespace PingApp.Interfaces;
+
+public class PingEventArgs : EventArgs
 {
-    public class PingEventArgs : EventArgs
-    {
-        public string Host { get; set; }
-        public PingResult Result { get; set; }
-    }
+    public string Host { get; set; }
+    public PingResult Result { get; set; }
 }
