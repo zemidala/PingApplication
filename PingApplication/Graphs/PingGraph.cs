@@ -23,10 +23,6 @@ namespace PingApp.Graphs
             canvas.Children.Clear();
             DrawBackground(canvas, canvasWidth, canvasHeight);
 
-            // Всегда рисуем сетку с 30 секциями
-            DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
-            DrawAxes(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
-
             if (results == null || results.Count == 0) return;
 
             var successfulResults = results.Where(r => r.IsSuccess).ToList();
@@ -53,6 +49,10 @@ namespace PingApp.Graphs
             double maxTime = times.Max() + 5;
             double timeRange = maxTime - minTime;
             if (timeRange == 0) timeRange = 1;
+
+            // Всегда рисуем сетку с 30 секциями
+            DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin, displayResults.Count, minTime, maxTime);
+            DrawAxes(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
 
             // Рисуем линии графика с правильной привязкой к сетке
             for (int i = 1; i < displayResults.Count; i++)
@@ -108,46 +108,56 @@ namespace PingApp.Graphs
 
             canvas.Children.Clear();
             DrawBackground(canvas, canvasWidth, canvasHeight);
-            DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
+            // Рисуем пустую сетку с 30 секциями
+            DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin, 0, 0, 100);
             DrawAxes(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
         }
 
-        private void DrawGrid(Canvas canvas, double left, double right, double top, double bottom)
+        private void DrawGrid(Canvas canvas, double left, double right, double top, double bottom, int pingCount, double minTime, double maxTime)
         {
             double width = right - left;
+            double height = bottom - top;
 
-            // Всегда рисуем 30 секций с шагом 1
-            for (int i = 0; i < MAX_DISPLAY_PINGS; i++)
+            // Всегда рисуем 30 секций (по количеству пингов)
+            for (int i = 0; i < 30; i++)
             {
-                double x = left + i * width / Math.Max(MAX_DISPLAY_PINGS - 1, 1);
-                var line = new Line
+                double x = left + i * width / Math.Max(30 - 1, 1);
+
+                // Рисуем вертикальные точки
+                for (double y = top; y <= bottom; y += 4) // Точки каждые 4 пикселя
                 {
-                    X1 = x,
-                    Y1 = top,
-                    X2 = x,
-                    Y2 = bottom,
-                    Stroke = Brushes.LightGray,
-                    StrokeThickness = 1
-                };
-                canvas.Children.Add(line);
+                    var dot = new Ellipse
+                    {
+                        Width = 1.5, // Размер точек
+                        Height = 1.5,
+                        Fill = Brushes.Gray // Более видимый цвет
+                    };
+                    Canvas.SetLeft(dot, x - 0.75);
+                    Canvas.SetTop(dot, y - 0.75);
+                    canvas.Children.Add(dot);
+                }
             }
 
-            double height = bottom - top;
-            int timeSteps = 8;
+            // Горизонтальные линии сетки по времени
+            double timeSteps = 8;
 
             for (int i = 0; i <= timeSteps; i++)
             {
                 double y = top + i * height / timeSteps;
-                var line = new Line
+
+                // Рисуем горизонтальные точки
+                for (double x = left; x <= right; x += 4) // Точки каждые 4 пикселя
                 {
-                    X1 = left,
-                    Y1 = y,
-                    X2 = right,
-                    Y2 = y,
-                    Stroke = Brushes.LightGray,
-                    StrokeThickness = 1
-                };
-                canvas.Children.Add(line);
+                    var dot = new Ellipse
+                    {
+                        Width = 1.5, // Размер точек
+                        Height = 1.5,
+                        Fill = Brushes.Gray // Более видимый цвет
+                    };
+                    Canvas.SetLeft(dot, x - 0.75);
+                    Canvas.SetTop(dot, y - 0.75);
+                    canvas.Children.Add(dot);
+                }
             }
         }
 
