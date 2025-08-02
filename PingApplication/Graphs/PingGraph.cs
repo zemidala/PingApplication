@@ -1,4 +1,5 @@
-﻿using System.Windows.Controls;
+﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using PingApp.Models;
@@ -48,8 +49,7 @@ public class PingGraph : GraphBase
         if (timeRange == 0) timeRange = 1;
 
         // Всегда рисуем сетку с 30 секциями
-        DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin, displayResults.Count, minTime,
-            maxTime);
+        DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
         DrawAxes(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
 
         // Рисуем линии графика с правильной привязкой к сетке
@@ -110,29 +110,28 @@ public class PingGraph : GraphBase
         canvas.Children.Clear();
         DrawBackground(canvas, canvasWidth, canvasHeight);
         // Рисуем пустую сетку с 30 секциями
-        DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin, 0, 0, 100);
+        DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
         DrawAxes(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
     }
 
-    private void DrawGrid(Canvas canvas, double left, double right, double top, double bottom, int pingCount,
-        double minTime, double maxTime)
+    private void DrawGrid(Canvas canvas, double left, double right, double top, double bottom)
     {
         var width = right - left;
         var height = bottom - top;
 
-        // Всегда рисуем 30 секций (по количеству пингов)
+        // Всегда рисуем 30 секций (точечная сетка как в других графиках)
         for (var i = 0; i < 30; i++)
         {
             var x = left + i * width / Math.Max(30 - 1, 1);
 
-            // Рисуем вертикальные точки
-            for (var y = top; y <= bottom; y += 4) // Точки каждые 4 пикселя
+            // Рисуем вертикальные точки (каждые 4 пикселя)
+            for (var y = top; y <= bottom; y += 4)
             {
                 var dot = new Ellipse
                 {
-                    Width = 1.5, // Размер точек
+                    Width = 1.5,
                     Height = 1.5,
-                    Fill = Brushes.Gray // Более видимый цвет
+                    Fill = Brushes.Gray
                 };
                 Canvas.SetLeft(dot, x - 0.75);
                 Canvas.SetTop(dot, y - 0.75);
@@ -140,21 +139,19 @@ public class PingGraph : GraphBase
             }
         }
 
-        // Горизонтальные линии сетки по времени
-        double timeSteps = 8;
-
-        for (var i = 0; i <= timeSteps; i++)
+        // Горизонтальные точки сетки
+        for (var i = 0; i <= 8; i++)
         {
-            var y = top + i * height / timeSteps;
+            var y = top + i * height / 8;
 
-            // Рисуем горизонтальные точки
-            for (var x = left; x <= right; x += 4) // Точки каждые 4 пикселя
+            // Рисуем горизонтальные точки (каждые 4 пикселя)
+            for (var x = left; x <= right; x += 4)
             {
                 var dot = new Ellipse
                 {
-                    Width = 1.5, // Размер точек
+                    Width = 1.5,
                     Height = 1.5,
-                    Fill = Brushes.Gray // Более видимый цвет
+                    Fill = Brushes.Gray
                 };
                 Canvas.SetLeft(dot, x - 0.75);
                 Canvas.SetTop(dot, y - 0.75);
@@ -168,10 +165,10 @@ public class PingGraph : GraphBase
     {
         var width = canvasWidth - 2 * margin;
 
-        // Показываем метки с шагом 1
-        for (var i = 0; i < MAX_DISPLAY_PINGS; i++)
+        // Показываем метки с шагом 1 (всегда 30 секций)
+        for (var i = 0; i < 30; i++)
         {
-            var x = margin + i * width / Math.Max(MAX_DISPLAY_PINGS - 1, 1);
+            var x = margin + i * width / Math.Max(30 - 1, 1);
             var pingNumber = startNumber + i;
 
             var tick = new Line
@@ -185,7 +182,6 @@ public class PingGraph : GraphBase
             };
             canvas.Children.Add(tick);
 
-            // Показываем каждую метку (шаг 1)
             var text = new TextBlock
             {
                 Text = pingNumber.ToString(),
@@ -224,26 +220,15 @@ public class PingGraph : GraphBase
             canvas.Children.Add(text);
         }
 
-        //var xAxisLabel = new TextBlock
-        //{
-        //    Text = "Количество пингов",
-        //    FontSize = 12,
-        //    FontWeight = FontWeights.Bold,
-        //    Foreground = Brushes.Black
-        //};
-        //Canvas.SetLeft(xAxisLabel, canvasWidth / 2 - 70);
-        //Canvas.SetTop(xAxisLabel, canvasHeight - 20);
-        //canvas.Children.Add(xAxisLabel);
-
-        //var yAxisLabel = new TextBlock
-        //{
-        //    Text = "Задержка (мс)",
-        //    FontSize = 12,
-        //    FontWeight = FontWeights.Bold,
-        //    Foreground = Brushes.Black
-        //};
-        //Canvas.SetLeft(yAxisLabel, 5);
-        //Canvas.SetTop(yAxisLabel, 10);
-        //canvas.Children.Add(yAxisLabel);
+        var yAxisLabel = new TextBlock
+        {
+            Text = "Задержка (мс)",
+            FontSize = 12,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.Black
+        };
+        Canvas.SetLeft(yAxisLabel, 5);
+        Canvas.SetTop(yAxisLabel, 10);
+        canvas.Children.Add(yAxisLabel);
     }
 }

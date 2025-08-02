@@ -27,25 +27,19 @@ public class ProgressGraph : GraphBase
         double bottomMargin = 40; // Уменьшенный нижний отступ для большей высоты графика
         double legendWidth = 120; // Ширина блока легенды
         var graphWidth = canvasWidth - labelAreaRightEdge - rightMargin; // Ширина графика
-
         canvas.Children.Clear();
         DrawBackground(canvas, canvasWidth, canvasHeight);
-
         // Рисуем сетку даже если нет данных
         DrawGrid(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, topMargin, canvasHeight - bottomMargin, 0,
             100);
         DrawAxes(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, topMargin, canvasHeight - bottomMargin);
-
-        // Рисуем блок легенды (без заголовка, т.к. он отдельно)
+        // Рисуем блок легенды (центрирован по вертикали)
         double legendH = 100;
-        var legendT = (canvasHeight - legendH) / 2;
+        var legendT = (canvasHeight - legendH) / 2; // ЦЕНТРИРОВАНИЕ ПО ВЕРТИКАЛИ
         DrawLegendBox(canvas, canvasWidth - rightMargin + 10, legendT, legendWidth, legendH);
-
         if (results == null || results.Count == 0) return;
-
         var successfulResults = results.Where(r => r.IsSuccess).ToList();
         if (successfulResults.Count == 0) return;
-
         var times = successfulResults.Select(r => (double)r.RoundTripTime).ToList();
         var minTime = Math.Max(0, times.Min() - 10);
         var maxTime = times.Max() + 10;
@@ -53,16 +47,13 @@ public class ProgressGraph : GraphBase
         var maxAllTime = times.Count > 0 ? times.Max() : 0;
         var minAllTime = times.Count > 0 ? times.Min() : 0;
         var avgTime = times.Count > 0 ? times.Average() : 0;
-
         // Сохраняем значения для легенды
         _lastMaxValue = maxAllTime;
         _lastMinValue = minAllTime;
         _lastAvgValue = avgTime;
         _lastCurrentValue = currentTime;
-
         var usableHeight = canvasHeight - topMargin - bottomMargin;
         var lineHeightSpacing = usableHeight / 5; // Используем всю доступную высоту
-
         // Порядок линий (сверху вниз):
         // 1. Макс. (красный)
         var maxY = topMargin + lineHeightSpacing;
@@ -80,7 +71,6 @@ public class ProgressGraph : GraphBase
         var currentY = topMargin + 4 * lineHeightSpacing;
         DrawProgressLine(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, currentY, currentTime, minTime,
             maxTime, Brushes.Blue, "Текущее.", currentTime, labelAreaRightEdge);
-
         DrawScales(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, canvasWidth, canvasHeight, topMargin,
             bottomMargin, minTime, maxTime);
     }
@@ -90,7 +80,6 @@ public class ProgressGraph : GraphBase
     {
         var gridWidth = right - left;
         var gridHeight = bottom - top;
-
         // Рисуем вертикальную точечную сетку (привязана к значениям оси X)
         var xSteps = 10; // Соответствует 11 отметкам на оси X
         for (var i = 0; i <= xSteps; i++)
@@ -138,7 +127,6 @@ public class ProgressGraph : GraphBase
     {
         var width = right - left;
         var valueRange = Math.Max(maxValue - minValue, 100); // Минимум 100 для начального отображения
-
         // Рассчитываем позицию точки в соответствии со значением
         var xPosition = left;
         if (valueRange > 0)
@@ -158,7 +146,6 @@ public class ProgressGraph : GraphBase
             StrokeThickness = 3
         };
         canvas.Children.Add(line);
-
         // Рисуем маркер значения на конце линии
         var marker = new Ellipse
         {
@@ -171,7 +158,6 @@ public class ProgressGraph : GraphBase
         Canvas.SetLeft(marker, xPosition - 4);
         Canvas.SetTop(marker, y - 4);
         canvas.Children.Add(marker);
-
         // Добавляем ярлык слева, выровненный по правому краю своей области
         var labelText = new TextBlock
         {
@@ -184,7 +170,6 @@ public class ProgressGraph : GraphBase
         Canvas.SetLeft(labelText, labelAreaRightEdge - MeasureTextWidth(label) - 10); // Выровнен по правому краю
         Canvas.SetTop(labelText, y - 7);
         canvas.Children.Add(labelText);
-
         // Добавляем числовое значение на конце линии
         var valueText = new TextBlock
         {
@@ -208,13 +193,14 @@ public class ProgressGraph : GraphBase
             new Typeface("Segoe UI"),
             11,
             Brushes.Black,
+            new NumberSubstitution(),
             1.0);
         return formattedText.Width;
     }
 
     private void DrawLegendBox(Canvas canvas, double left, double top, double width, double height)
     {
-        // Рисуем рамку легенды (без заголовка)
+        // Рисуем рамку легенды (центрирована по вертикали)
         var border = new Rectangle
         {
             Width = width,
@@ -224,13 +210,11 @@ public class ProgressGraph : GraphBase
             Fill = Brushes.Transparent
         };
         Canvas.SetLeft(border, left);
-        Canvas.SetTop(border, top);
+        Canvas.SetTop(border, top); // УЖЕ ЦЕНТРИРОВАНО: top = (canvasHeight - height) / 2
         canvas.Children.Add(border);
-
         // Добавляем элементы легенды с равномерным распределением
         var itemCount = 4; // Количество элементов
         var itemHeight = (height - 20) / itemCount; // Больше отступов
-
         // 1. Макс. (красный) - [■] значение ярлык
         DrawLegendItem(canvas, left + 8, top + 10, Brushes.Red, _lastMaxValue, "Макс.", itemHeight);
         // 2. Мин. (оранжевый) - [■] значение ярлык
@@ -257,7 +241,6 @@ public class ProgressGraph : GraphBase
         Canvas.SetLeft(colorBox, left);
         Canvas.SetTop(colorBox, top + (itemHeight - 12) / 2); // Центрируем по вертикали
         canvas.Children.Add(colorBox);
-
         // Числовое значение
         var valueText = new TextBlock
         {
@@ -269,7 +252,6 @@ public class ProgressGraph : GraphBase
         Canvas.SetLeft(valueText, left + 20); // Увеличен отступ
         Canvas.SetTop(valueText, top + (itemHeight - 14) / 2); // Центрируем по вертикали
         canvas.Children.Add(valueText);
-
         // Текст ярлыка
         var labelText = new TextBlock
         {
@@ -286,7 +268,7 @@ public class ProgressGraph : GraphBase
     private void DrawScales(Canvas canvas, double left, double right, double canvasWidth, double canvasHeight,
         double topMargin, double bottomMargin, double minTime, double maxTime)
     {
-        // Шкала по оси X (время) - только горизонтальная шкала
+        // Шкала по оси X (время) - ЦЕНТРИРОВАНИЕ ТЕКСТА ОТНОСИТЕЛЬНО РИСОК
         for (var i = 0; i <= 10; i++)
         {
             var timeValue = minTime + i * (maxTime - minTime) / 10;
@@ -301,13 +283,27 @@ public class ProgressGraph : GraphBase
                 StrokeThickness = 2
             };
             canvas.Children.Add(tick);
+
             var text = new TextBlock
             {
                 Text = Math.Round(timeValue).ToString(),
                 FontSize = 9,
                 Foreground = Brushes.Black
             };
-            Canvas.SetLeft(text, x - 12);
+
+            // ЦЕНТРИРОВАНИЕ ТЕКСТА ОТНОСИТЕЛЬНО РИСКИ
+            var formattedText = new FormattedText(
+                text.Text,
+                CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(text.FontFamily, text.FontStyle, text.FontWeight, text.FontStretch),
+                text.FontSize,
+                Brushes.Black,
+                new NumberSubstitution(),
+                1.0);
+
+            var textWidth = formattedText.Width;
+            Canvas.SetLeft(text, x - textWidth / 2); // Центрируем текст относительно риски
             Canvas.SetTop(text, canvasHeight - bottomMargin + 8);
             canvas.Children.Add(text);
         }
