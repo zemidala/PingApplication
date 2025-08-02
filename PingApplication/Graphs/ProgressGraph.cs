@@ -23,8 +23,8 @@ public class ProgressGraph : GraphBase
         var canvasHeight = canvas.ActualHeight;
         double labelAreaRightEdge = 100; // Правый край области ярлыков - фиксированная позиция
         double rightMargin = 160; // Отступ для легенды
-        double topMargin = 40;
-        double bottomMargin = 60;
+        double topMargin = 20; // Уменьшенный верхний отступ для большей высоты графика
+        double bottomMargin = 40; // Уменьшенный нижний отступ для большей высоты графика
         double legendWidth = 120; // Ширина блока легенды
         var graphWidth = canvasWidth - labelAreaRightEdge - rightMargin; // Ширина графика
 
@@ -49,7 +49,6 @@ public class ProgressGraph : GraphBase
         var times = successfulResults.Select(r => (double)r.RoundTripTime).ToList();
         var minTime = Math.Max(0, times.Min() - 10);
         var maxTime = times.Max() + 10;
-
         double currentTime = successfulResults.Last().RoundTripTime;
         var maxAllTime = times.Count > 0 ? times.Max() : 0;
         var minAllTime = times.Count > 0 ? times.Min() : 0;
@@ -62,24 +61,21 @@ public class ProgressGraph : GraphBase
         _lastCurrentValue = currentTime;
 
         var usableHeight = canvasHeight - topMargin - bottomMargin;
-        var lineHeightSpacing = usableHeight / 5;
+        var lineHeightSpacing = usableHeight / 5; // Используем всю доступную высоту
 
         // Порядок линий (сверху вниз):
         // 1. Макс. (красный)
         var maxY = topMargin + lineHeightSpacing;
         DrawProgressLine(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, maxY, maxAllTime, minTime,
             maxTime, Brushes.Red, "Макс.", maxAllTime, labelAreaRightEdge);
-
         // 2. Мин. (оранжевый)
         var minY = topMargin + 2 * lineHeightSpacing;
         DrawProgressLine(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, minY, minAllTime, minTime,
             maxTime, Brushes.Orange, "Мин.", minAllTime, labelAreaRightEdge);
-
         // 3. Среднее. (зеленый)
         var avgY = topMargin + 3 * lineHeightSpacing;
         DrawProgressLine(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, avgY, avgTime, minTime, maxTime,
             Brushes.Green, "Среднее.", avgTime, labelAreaRightEdge);
-
         // 4. Текущее. (синий)
         var currentY = topMargin + 4 * lineHeightSpacing;
         DrawProgressLine(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, currentY, currentTime, minTime,
@@ -97,11 +93,9 @@ public class ProgressGraph : GraphBase
 
         // Рисуем вертикальную точечную сетку (привязана к значениям оси X)
         var xSteps = 10; // Соответствует 11 отметкам на оси X
-
         for (var i = 0; i <= xSteps; i++)
         {
             var x = left + i * gridWidth / xSteps;
-
             // Рисуем точки по всей вертикали
             for (var y = top; y <= bottom; y += 4) // Точки каждые 4 пикселя
             {
@@ -120,11 +114,9 @@ public class ProgressGraph : GraphBase
         // Рисуем горизонтальную точечную сетку (только для 4 линий графика)
         // Позиции 4 линий графика
         double[] linePositions = { 0.2, 0.4, 0.6, 0.8 }; // Относительные позиции
-
         foreach (var relativePos in linePositions)
         {
             var y = top + relativePos * gridHeight;
-
             // Рисуем точки по горизонтали
             for (var x = left; x <= right; x += 4) // Точки каждые 4 пикселя
             {
@@ -241,13 +233,10 @@ public class ProgressGraph : GraphBase
 
         // 1. Макс. (красный) - [■] значение ярлык
         DrawLegendItem(canvas, left + 8, top + 10, Brushes.Red, _lastMaxValue, "Макс.", itemHeight);
-
         // 2. Мин. (оранжевый) - [■] значение ярлык
         DrawLegendItem(canvas, left + 8, top + 10 + itemHeight, Brushes.Orange, _lastMinValue, "Мин.", itemHeight);
-
         // 3. Среднее. (зеленый) - [■] значение ярлык
         DrawLegendItem(canvas, left + 8, top + 10 + 2 * itemHeight, Brushes.Green, _lastAvgValue, "Сред.", itemHeight);
-
         // 4. Текущее. (синий) - [■] значение ярлык
         DrawLegendItem(canvas, left + 8, top + 10 + 3 * itemHeight, Brushes.Blue, _lastCurrentValue, "Текущ.",
             itemHeight);
@@ -297,12 +286,11 @@ public class ProgressGraph : GraphBase
     private void DrawScales(Canvas canvas, double left, double right, double canvasWidth, double canvasHeight,
         double topMargin, double bottomMargin, double minTime, double maxTime)
     {
-        // Шкала по оси X (время)
+        // Шкала по оси X (время) - только горизонтальная шкала
         for (var i = 0; i <= 10; i++)
         {
             var timeValue = minTime + i * (maxTime - minTime) / 10;
             var x = left + i * (right - left) / 10;
-
             var tick = new Line
             {
                 X1 = x,
@@ -313,7 +301,6 @@ public class ProgressGraph : GraphBase
                 StrokeThickness = 2
             };
             canvas.Children.Add(tick);
-
             var text = new TextBlock
             {
                 Text = Math.Round(timeValue).ToString(),
