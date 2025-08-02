@@ -52,14 +52,16 @@
                     </Grid>
                 </Border>
 
-                <!-- Нижняя панель с двумя графиками -->
+                <!-- Нижняя панель с двумя графиками (3/4 и 1/4) -->
                 <Grid Grid.Row="2">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="3*"/>
+                        <!-- 3/4 ширины -->
+                        <ColumnDefinition Width="1*"/>
+                        <!-- 1/4 ширины -->
                     </Grid.ColumnDefinitions>
 
-                    <!-- График прогресса -->
+                    <!-- График прогресса (3/4 ширины) -->
                     <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="5">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -71,7 +73,7 @@
                         </Grid>
                     </Border>
 
-                    <!-- График количества пингов -->
+                    <!-- График количества пингов (1/4 ширины) -->
                     <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Margin="5">
                         <Grid>
                             <Grid.RowDefinitions>
