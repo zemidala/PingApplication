@@ -163,6 +163,7 @@ public partial class MainWindow : Window
                 {
                     _tabData[_currentTab].Results.Add(result);
                     StatusTextBlock.Text = $"Error: {ex.Message}";
+                    DrawGraphs(result); // ВАЖНО: Вызываем отрисовку даже при ошибке
                 });
             }
 

@@ -20,49 +20,28 @@ public class PingGraph : GraphBase
         canvas.Children.Clear();
         DrawBackground(canvas, canvasWidth, canvasHeight);
 
-        if (results == null || results.Count == 0) return;
-
-        var successfulResults = results.Where(r => r.IsSuccess).ToList();
-        if (successfulResults.Count == 0) return;
-
-        List<PingResult> displayResults;
-        var totalSuccessfulCount = successfulResults.Count;
-
-        if (totalSuccessfulCount > MAX_DISPLAY_PINGS)
-        {
-            displayResults = successfulResults.Skip(totalSuccessfulCount - MAX_DISPLAY_PINGS).Take(MAX_DISPLAY_PINGS)
-                .ToList();
-            startIndex = totalSuccessfulCount - MAX_DISPLAY_PINGS + 1;
-        }
-        else
-        {
-            displayResults = new List<PingResult>(successfulResults);
-            startIndex = 1;
-        }
-
-        var times = displayResults.Select(r => (double)r.RoundTripTime).ToList();
-        if (times.Count == 0) return;
-
-        var minTime = Math.Max(0, times.Min() - 5);
-        var maxTime = times.Max() + 5;
-        var timeRange = maxTime - minTime;
-        if (timeRange == 0) timeRange = 1;
-
-        // Всегда рисуем сетку с 30 секциями
+        // Всегда рисуем сетку и оси
         DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
         DrawAxes(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
 
-        // Рисуем линии графика с правильной привязкой к сетке
+        if (results == null || results.Count == 0) return;
+
+        var displayResults = GetDisplayResults(results);
+
+        if (displayResults.Count == 0) return;
+
+        var (minTime, maxTime) = CalculateTimeRange(displayResults);
+        var timeRange = maxTime - minTime;
+        if (timeRange == 0) timeRange = 100; // Минимальный диапазон для отображения
+
+        // Рисуем линии графика
         for (var i = 1; i < displayResults.Count; i++)
         {
-            // Привязываем точки к сетке с шагом 1
             var x1 = margin + (i - 1) * (canvasWidth - 2 * margin) / Math.Max(MAX_DISPLAY_PINGS - 1, 1);
-            var y1 = canvasHeight - margin - (displayResults[i - 1].RoundTripTime - minTime) *
-                (canvasHeight - 2 * margin) / timeRange;
+            var y1 = CalculateYPosition(displayResults[i - 1], minTime, timeRange, canvasHeight, margin);
 
             var x2 = margin + i * (canvasWidth - 2 * margin) / Math.Max(MAX_DISPLAY_PINGS - 1, 1);
-            var y2 = canvasHeight - margin -
-                     (displayResults[i].RoundTripTime - minTime) * (canvasHeight - 2 * margin) / timeRange;
+            var y2 = CalculateYPosition(displayResults[i], minTime, timeRange, canvasHeight, margin);
 
             var line = new Line
             {
@@ -70,25 +49,23 @@ public class PingGraph : GraphBase
                 Y1 = y1,
                 X2 = x2,
                 Y2 = y2,
-                Stroke = Brushes.Blue,
+                Stroke = displayResults[i].IsSuccess ? Brushes.Blue : Brushes.Red,
                 StrokeThickness = 2
             };
             canvas.Children.Add(line);
         }
 
-        // Рисуем точки с правильной привязкой к сетке
+        // Рисуем точки
         for (var i = 0; i < displayResults.Count; i++)
         {
-            // Привязываем точки к сетке с шагом 1
             var x = margin + i * (canvasWidth - 2 * margin) / Math.Max(MAX_DISPLAY_PINGS - 1, 1);
-            var y = canvasHeight - margin -
-                    (displayResults[i].RoundTripTime - minTime) * (canvasHeight - 2 * margin) / timeRange;
+            var y = CalculateYPosition(displayResults[i], minTime, timeRange, canvasHeight, margin);
 
             var ellipse = new Ellipse
             {
                 Width = 6,
                 Height = 6,
-                Fill = Brushes.Red
+                Fill = displayResults[i].IsSuccess ? Brushes.Green : Brushes.Red
             };
             Canvas.SetLeft(ellipse, x - 3);
             Canvas.SetTop(ellipse, y - 3);
@@ -98,7 +75,50 @@ public class PingGraph : GraphBase
         DrawScales(canvas, margin, canvasWidth, canvasHeight, displayResults.Count, minTime, maxTime, startIndex);
     }
 
-    // Новый метод для инициализации только сетки
+    private List<PingResult> GetDisplayResults(List<PingResult> results)
+    {
+        List<PingResult> displayResults;
+        var totalCount = results.Count;
+
+        if (totalCount > MAX_DISPLAY_PINGS)
+        {
+            displayResults = results.Skip(totalCount - MAX_DISPLAY_PINGS).Take(MAX_DISPLAY_PINGS).ToList();
+            startIndex = totalCount - MAX_DISPLAY_PINGS + 1;
+        }
+        else
+        {
+            displayResults = new List<PingResult>(results);
+            startIndex = 1;
+        }
+
+        return displayResults;
+    }
+
+    private (double minTime, double maxTime) CalculateTimeRange(List<PingResult> results)
+    {
+        var successfulResults = results.Where(r => r.IsSuccess).ToList();
+
+        if (successfulResults.Count == 0)
+            // Если нет успешных результатов, используем диапазон 0-100
+            return (0, 100);
+
+        var times = successfulResults.Select(r => (double)r.RoundTripTime).ToList();
+        var minTime = Math.Max(0, times.Min() - 5);
+        var maxTime = times.Max() + 5;
+
+        return (minTime, maxTime);
+    }
+
+    private double CalculateYPosition(PingResult result, double minTime, double timeRange, double canvasHeight,
+        double margin)
+    {
+        if (!result.IsSuccess)
+            // Для ошибок показываем минимальное значение (самая нижняя линия)
+            return canvasHeight - margin;
+
+        return canvasHeight - margin - (result.RoundTripTime - minTime) * (canvasHeight - 2 * margin) / timeRange;
+    }
+
     public void InitializeGrid(Canvas canvas)
     {
         if (canvas == null) return;
@@ -109,7 +129,6 @@ public class PingGraph : GraphBase
 
         canvas.Children.Clear();
         DrawBackground(canvas, canvasWidth, canvasHeight);
-        // Рисуем пустую сетку с 30 секциями
         DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
         DrawAxes(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
     }
@@ -119,12 +138,11 @@ public class PingGraph : GraphBase
         var width = right - left;
         var height = bottom - top;
 
-        // Всегда рисуем 30 секций (точечная сетка как в других графиках)
+        // Вертикальные точки сетки (30 секций)
         for (var i = 0; i < 30; i++)
         {
             var x = left + i * width / Math.Max(30 - 1, 1);
 
-            // Рисуем вертикальные точки (каждые 4 пикселя)
             for (var y = top; y <= bottom; y += 4)
             {
                 var dot = new Ellipse
@@ -144,7 +162,6 @@ public class PingGraph : GraphBase
         {
             var y = top + i * height / 8;
 
-            // Рисуем горизонтальные точки (каждые 4 пикселя)
             for (var x = left; x <= right; x += 4)
             {
                 var dot = new Ellipse
@@ -165,7 +182,7 @@ public class PingGraph : GraphBase
     {
         var width = canvasWidth - 2 * margin;
 
-        // Показываем метки с шагом 1 (всегда 30 секций)
+        // Метки по оси X
         for (var i = 0; i < 30; i++)
         {
             var x = margin + i * width / Math.Max(30 - 1, 1);
@@ -193,6 +210,7 @@ public class PingGraph : GraphBase
             canvas.Children.Add(text);
         }
 
+        // Метки по оси Y
         for (var i = 0; i <= 8; i++)
         {
             var timeValue = minTime + i * (maxTime - minTime) / 8;

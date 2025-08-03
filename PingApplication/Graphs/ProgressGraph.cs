@@ -39,14 +39,25 @@ public class ProgressGraph : GraphBase
         DrawLegendBox(canvas, canvasWidth - rightMargin + 10, legendT, legendWidth, legendH);
         if (results == null || results.Count == 0) return;
         var successfulResults = results.Where(r => r.IsSuccess).ToList();
-        if (successfulResults.Count == 0) return;
+        // Обрабатываем все результаты, включая ошибки
         var times = successfulResults.Select(r => (double)r.RoundTripTime).ToList();
-        var minTime = Math.Max(0, times.Min() - 10);
-        var maxTime = times.Max() + 10;
-        double currentTime = successfulResults.Last().RoundTripTime;
-        var maxAllTime = times.Count > 0 ? times.Max() : 0;
-        var minAllTime = times.Count > 0 ? times.Min() : 0;
-        var avgTime = times.Count > 0 ? times.Average() : 0;
+        var minTime = 0.0;
+        var maxTime = 100.0;
+        double currentTime = 0;
+        var maxAllTime = 0.0;
+        var minAllTime = 0.0;
+        var avgTime = 0.0;
+        // Если есть успешные результаты, используем их значения
+        if (successfulResults.Count > 0)
+        {
+            minTime = Math.Max(0, times.Min() - 10);
+            maxTime = times.Max() + 10;
+            currentTime = successfulResults.Last().RoundTripTime;
+            maxAllTime = times.Count > 0 ? times.Max() : 0;
+            minAllTime = times.Count > 0 ? times.Min() : 0;
+            avgTime = times.Count > 0 ? times.Average() : 0;
+        }
+
         // Сохраняем значения для легенды
         _lastMaxValue = maxAllTime;
         _lastMinValue = minAllTime;
@@ -283,14 +294,12 @@ public class ProgressGraph : GraphBase
                 StrokeThickness = 2
             };
             canvas.Children.Add(tick);
-
             var text = new TextBlock
             {
                 Text = Math.Round(timeValue).ToString(),
                 FontSize = 9,
                 Foreground = Brushes.Black
             };
-
             // ЦЕНТРИРОВАНИЕ ТЕКСТА ОТНОСИТЕЛЬНО РИСКИ
             var formattedText = new FormattedText(
                 text.Text,
@@ -301,7 +310,6 @@ public class ProgressGraph : GraphBase
                 Brushes.Black,
                 new NumberSubstitution(),
                 1.0);
-
             var textWidth = formattedText.Width;
             Canvas.SetLeft(text, x - textWidth / 2); // Центрируем текст относительно риски
             Canvas.SetTop(text, canvasHeight - bottomMargin + 8);

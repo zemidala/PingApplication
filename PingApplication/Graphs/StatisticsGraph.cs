@@ -15,35 +15,28 @@ public class StatisticsGraph : GraphBase
         var canvasHeight = canvas.ActualHeight;
         double margin = 40;
         double topMargin = 40; // Уменьшенный верхний отступ
-
         canvas.Children.Clear();
         DrawBackground(canvas, canvasWidth, canvasHeight);
-
         // Рисуем точечную сетку
         DrawGrid(canvas, margin, canvasWidth - margin, topMargin, canvasHeight - margin, 10);
         DrawAxes(canvas, margin, canvasWidth - margin, topMargin, canvasHeight - margin);
-
-        if (results == null || results.Count == 0) return;
-
+        // Обрабатываем null как пустой список
+        if (results == null) results = new List<PingResult>();
         var successCount = results.Count(r => r.IsSuccess);
         var failCount = results.Count(r => !r.IsSuccess);
         var totalCount = results.Count;
-
         double barWidth = 60; // Фиксированная ширина столбиков
-
         // Высота доступной области для графика (полная высота)
         var availableHeight = canvasHeight - topMargin - margin;
         var maxCount = Math.Max(1, Math.Max(successCount, failCount));
-
         // Рассчитываем высоты столбиков (используем полную высоту без сжатия)
-        var successHeight = maxCount > 0 ? availableHeight * successCount / maxCount : 0;
+        var successHeight = totalCount > 0 ? availableHeight * successCount / totalCount : 0;
         var successRect = new Rectangle
         {
             Width = barWidth,
             Height = successHeight,
             Fill = Brushes.Green
         };
-
         // Позиционируем столбцы по центру
         var centerX = canvasWidth / 2;
         double spacing = 100; // Расстояние между столбцами
@@ -53,8 +46,7 @@ public class StatisticsGraph : GraphBase
         Canvas.SetLeft(successRect, successX);
         Canvas.SetTop(successRect, successY);
         canvas.Children.Add(successRect);
-
-        var failHeight = maxCount > 0 ? availableHeight * failCount / maxCount : 0;
+        var failHeight = totalCount > 0 ? availableHeight * failCount / totalCount : 0;
         var failRect = new Rectangle
         {
             Width = barWidth,
@@ -65,14 +57,11 @@ public class StatisticsGraph : GraphBase
         Canvas.SetLeft(failRect, failX);
         Canvas.SetTop(failRect, failY);
         canvas.Children.Add(failRect);
-
         // Рассчитываем проценты
         var successPercent = totalCount > 0 ? Math.Round((double)successCount / totalCount * 100, 1) : 0;
         var failPercent = totalCount > 0 ? Math.Round((double)failCount / totalCount * 100, 1) : 0;
-
         // Добавляем блоки со значениями НАД столбцами (внутри области графика)
         AddValueBlocks(canvas, successX, failX, barWidth, successY, failY, successCount, failCount);
-
         // Ярлыки под столбиками - строго по центру столбцов
         var successText = new TextBlock
         {
@@ -85,7 +74,6 @@ public class StatisticsGraph : GraphBase
         Canvas.SetLeft(successText, successX + barWidth / 2 - MeasureTextWidth(successText.Text, successText) / 2);
         Canvas.SetTop(successText, canvasHeight - margin + 5); // Под столбиком
         canvas.Children.Add(successText);
-
         var failText = new TextBlock
         {
             Text = $"Не успешно: {failPercent:F1}%",
@@ -97,7 +85,6 @@ public class StatisticsGraph : GraphBase
         Canvas.SetLeft(failText, failX + barWidth / 2 - MeasureTextWidth(failText.Text, failText) / 2);
         Canvas.SetTop(failText, canvasHeight - margin + 5); // Под столбиком
         canvas.Children.Add(failText);
-
         DrawScales(canvas, margin, topMargin, canvasWidth, canvasHeight, Math.Max(successCount, failCount));
     }
 
@@ -112,13 +99,11 @@ public class StatisticsGraph : GraphBase
             FontSize = 10,
             FontWeight = FontWeights.Bold
         };
-
         // Измеряем ширину текста
         var successTextWidth = MeasureTextWidth(successValueText.Text, successValueText);
         var successTextHeight = MeasureTextHeight(successValueText.Text, successValueText);
         var successBlockWidth = Math.Max(successTextWidth + 10, 30); // Минимум 30 пикселей
         var successBlockHeight = Math.Max(successTextHeight + 6, 20); // Минимум 20 пикселей
-
         // Фоновый прямоугольник для значения зеленого столбца
         var successValueBlock = new Rectangle
         {
@@ -131,13 +116,11 @@ public class StatisticsGraph : GraphBase
         Canvas.SetLeft(successValueBlock, successX + barWidth / 2 - successBlockWidth / 2);
         Canvas.SetTop(successValueBlock, successY - successBlockHeight - 2); // Ближе к столбцу
         canvas.Children.Add(successValueBlock);
-
         // Текст значения зеленого столбца
         Canvas.SetLeft(successValueText, successX + barWidth / 2 - successTextWidth / 2);
         Canvas.SetTop(successValueText,
             successY - successBlockHeight + (successBlockHeight - successTextHeight) / 2 - 2);
         canvas.Children.Add(successValueText);
-
         // Блок со значением для красного столбца
         var failValueText = new TextBlock
         {
@@ -146,13 +129,11 @@ public class StatisticsGraph : GraphBase
             FontSize = 10,
             FontWeight = FontWeights.Bold
         };
-
         // Измеряем ширину текста
         var failTextWidth = MeasureTextWidth(failValueText.Text, failValueText);
         var failTextHeight = MeasureTextHeight(failValueText.Text, failValueText);
         var failBlockWidth = Math.Max(failTextWidth + 10, 30); // Минимум 30 пикселей
         var failBlockHeight = Math.Max(failTextHeight + 6, 20); // Минимум 20 пикселей
-
         // Фоновый прямоугольник для значения красного столбца
         var failValueBlock = new Rectangle
         {
@@ -165,7 +146,6 @@ public class StatisticsGraph : GraphBase
         Canvas.SetLeft(failValueBlock, failX + barWidth / 2 - failBlockWidth / 2);
         Canvas.SetTop(failValueBlock, failY - failBlockHeight - 2); // Ближе к столбцу
         canvas.Children.Add(failValueBlock);
-
         // Текст значения красного столбца
         Canvas.SetLeft(failValueText, failX + barWidth / 2 - failTextWidth / 2);
         Canvas.SetTop(failValueText, failY - failBlockHeight + (failBlockHeight - failTextHeight) / 2 - 2);
@@ -184,7 +164,6 @@ public class StatisticsGraph : GraphBase
             Brushes.Black,
             new NumberSubstitution(),
             1.0);
-
         return formattedText.Width;
     }
 
@@ -200,7 +179,6 @@ public class StatisticsGraph : GraphBase
             Brushes.Black,
             new NumberSubstitution(),
             1.0);
-
         return formattedText.Height;
     }
 
@@ -208,14 +186,11 @@ public class StatisticsGraph : GraphBase
     {
         var width = right - left;
         var height = bottom - top;
-
         // Точечная сетка - только 2 вертикальные линии для 2 столбцов
         var centerX = (left + right) / 2;
         double spacing = 100; // То же расстояние, что и между столбцами
-
         var successLineX = centerX - spacing / 2; // Линия для левого столбца
         var failLineX = centerX + spacing / 2; // Линия для правого столбца
-
         // Рисуем точки для левой вертикальной линии
         for (var y = top; y <= bottom; y += 4) // Точки каждые 4 пикселя
         {
@@ -249,7 +224,6 @@ public class StatisticsGraph : GraphBase
         for (var i = 0; i <= horizontalLines; i++)
         {
             var y = top + i * height / horizontalLines;
-
             // Рисуем точки по горизонтали
             for (var x = left; x <= right; x += 4) // Точки каждые 4 пикселя
             {
@@ -271,11 +245,9 @@ public class StatisticsGraph : GraphBase
     {
         var maxScale = Math.Max(10, (int)Math.Ceiling(Math.Max(maxValue, 5) / 5.0) * 5);
         var step = Math.Max(1, maxScale / 5);
-
         for (var i = 0; i <= maxScale; i += step)
         {
             var y = canvasHeight - margin - i * (canvasHeight - topMargin - margin) / Math.Max(maxScale, 1);
-
             var tick = new Line
             {
                 X1 = margin - 5,
@@ -286,7 +258,6 @@ public class StatisticsGraph : GraphBase
                 StrokeThickness = 2
             };
             canvas.Children.Add(tick);
-
             var text = new TextBlock
             {
                 Text = i.ToString(),
