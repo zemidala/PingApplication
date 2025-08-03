@@ -14,7 +14,7 @@ public class StatisticsGraph : GraphBase
         var canvasWidth = canvas.ActualWidth;
         var canvasHeight = canvas.ActualHeight;
         double margin = 40;
-        double topMargin = 40;
+        double topMargin = 40; // Уменьшенный верхний отступ
 
         // Проверяем, что размеры корректны
         if (canvasWidth <= 0 || canvasHeight <= 0) return;
@@ -26,11 +26,12 @@ public class StatisticsGraph : GraphBase
         DrawGrid(canvas, margin, canvasWidth - margin, topMargin, canvasHeight - margin, 10);
         DrawAxes(canvas, margin, canvasWidth - margin, topMargin, canvasHeight - margin);
 
-        // ВСЕГДА рисуем шкалы
+        // ВСЕГДА рисуем шкалы (даже без данных)
         DrawScales(canvas, margin, topMargin, canvasWidth, canvasHeight, 10);
 
-        // Только если есть данные, рисуем столбцы
-        if (results == null || results.Count == 0) return;
+        // Если нет данных, прекращаем отрисовку
+        if (results == null) results = new List<PingResult>();
+        if (results.Count == 0) return;
 
         var successCount = results.Count(r => r.IsSuccess);
         var failCount = results.Count(r => !r.IsSuccess);
@@ -40,19 +41,12 @@ public class StatisticsGraph : GraphBase
         // Высота доступной области для графика (полная высота)
         var availableHeight = canvasHeight - topMargin - margin;
 
-        // Убеждаемся, что высота не отрицательна
-        availableHeight = Math.Max(0, availableHeight);
+        // Проверяем, что доступная высота положительна
+        if (availableHeight <= 0) return;
 
         // Рассчитываем высоты столбиков (используем полную высоту без сжатия)
-        double successHeight = 0;
-        double failHeight = 0;
-
-        if (totalCount > 0 && availableHeight > 0)
-        {
-            // Используем общее количество для пропорционального расчета
-            successHeight = availableHeight * successCount / totalCount;
-            failHeight = availableHeight * failCount / totalCount;
-        }
+        var successHeight = totalCount > 0 ? availableHeight * successCount / totalCount : 0;
+        var failHeight = totalCount > 0 ? availableHeight * failCount / totalCount : 0;
 
         // Убеждаемся, что высоты не отрицательны
         successHeight = Math.Max(0, successHeight);
@@ -63,11 +57,6 @@ public class StatisticsGraph : GraphBase
         double spacing = 100; // Расстояние между столбцами
         var successX = centerX - spacing / 2 - barWidth / 2; // Левый столбец
         var failX = centerX + spacing / 2 - barWidth / 2; // Правый столец
-
-        // Высоты не должны превышать доступную область
-        successHeight = Math.Min(successHeight, availableHeight);
-        failHeight = Math.Min(failHeight, availableHeight);
-
         var successY = canvasHeight - margin - successHeight;
         var failY = canvasHeight - margin - failHeight;
 
@@ -131,6 +120,7 @@ public class StatisticsGraph : GraphBase
         Canvas.SetTop(failText, canvasHeight - margin + 5); // Под столбиком
         canvas.Children.Add(failText);
 
+        // Рисуем шкалы еще раз с реальными значениями
         DrawScales(canvas, margin, topMargin, canvasWidth, canvasHeight, Math.Max(successCount, failCount));
     }
 

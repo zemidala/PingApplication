@@ -20,19 +20,22 @@ public class PingGraph : GraphBase
         // Проверяем, что размеры корректны
         if (canvasWidth <= 0 || canvasHeight <= 0) return;
 
+        // Полная очистка холста
         canvas.Children.Clear();
+
         DrawBackground(canvas, canvasWidth, canvasHeight);
 
         // Всегда рисуем сетку и оси
         DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
         DrawAxes(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
 
-        // Всегда рисуем шкалы (даже без данных)
-        // Используем минимальные значения для отображения шкал
-        DrawScales(canvas, margin, canvasWidth, canvasHeight, 0, 0, 100, 1);
-
-        // Только если есть данные, рисуем график
-        if (results == null || results.Count == 0) return;
+        // Всегда рисуем шкалы
+        if (results == null || results.Count == 0)
+        {
+            // Для пустых данных используем минимальные значения
+            DrawScales(canvas, margin, canvasWidth, canvasHeight, 0, 0, 100, 1);
+            return;
+        }
 
         var displayResults = GetDisplayResults(results);
 
