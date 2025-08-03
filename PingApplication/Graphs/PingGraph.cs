@@ -17,6 +17,9 @@ public class PingGraph : GraphBase
         var canvasHeight = canvas.ActualHeight;
         double margin = 40;
 
+        // Проверяем, что размеры корректны
+        if (canvasWidth <= 0 || canvasHeight <= 0) return;
+
         canvas.Children.Clear();
         DrawBackground(canvas, canvasWidth, canvasHeight);
 
@@ -24,6 +27,11 @@ public class PingGraph : GraphBase
         DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
         DrawAxes(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
 
+        // Всегда рисуем шкалы (даже без данных)
+        // Используем минимальные значения для отображения шкал
+        DrawScales(canvas, margin, canvasWidth, canvasHeight, 0, 0, 100, 1);
+
+        // Только если есть данные, рисуем график
         if (results == null || results.Count == 0) return;
 
         var displayResults = GetDisplayResults(results);
@@ -119,20 +127,6 @@ public class PingGraph : GraphBase
         return canvasHeight - margin - (result.RoundTripTime - minTime) * (canvasHeight - 2 * margin) / timeRange;
     }
 
-    public void InitializeGrid(Canvas canvas)
-    {
-        if (canvas == null) return;
-
-        var canvasWidth = canvas.ActualWidth > 0 ? canvas.ActualWidth : 800;
-        var canvasHeight = canvas.ActualHeight > 0 ? canvas.ActualHeight : 400;
-        double margin = 40;
-
-        canvas.Children.Clear();
-        DrawBackground(canvas, canvasWidth, canvasHeight);
-        DrawGrid(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
-        DrawAxes(canvas, margin, canvasWidth - margin, margin, canvasHeight - margin);
-    }
-
     private void DrawGrid(Canvas canvas, double left, double right, double top, double bottom)
     {
         var width = right - left;
@@ -182,8 +176,8 @@ public class PingGraph : GraphBase
     {
         var width = canvasWidth - 2 * margin;
 
-        // Метки по оси X
-        for (var i = 0; i < 30; i++)
+        // Шкала по оси X (номера пингов)
+        for (var i = 0; i < 30; i++) // Всегда 30 секций
         {
             var x = margin + i * width / Math.Max(30 - 1, 1);
             var pingNumber = startNumber + i;
@@ -199,18 +193,22 @@ public class PingGraph : GraphBase
             };
             canvas.Children.Add(tick);
 
-            var text = new TextBlock
+            // Подписи рисуем только если есть смысл
+            if (displayCount > 0 || i % 5 == 0) // Рисуем каждую 5-ю метку при отсутствии данных
             {
-                Text = pingNumber.ToString(),
-                FontSize = 10,
-                Foreground = Brushes.Black
-            };
-            Canvas.SetLeft(text, x - 8);
-            Canvas.SetTop(text, canvasHeight - margin + 8);
-            canvas.Children.Add(text);
+                var text = new TextBlock
+                {
+                    Text = pingNumber.ToString(),
+                    FontSize = 10,
+                    Foreground = Brushes.Black
+                };
+                Canvas.SetLeft(text, x - 8);
+                Canvas.SetTop(text, canvasHeight - margin + 8);
+                canvas.Children.Add(text);
+            }
         }
 
-        // Метки по оси Y
+        // Шкала по оси Y (время)
         for (var i = 0; i <= 8; i++)
         {
             var timeValue = minTime + i * (maxTime - minTime) / 8;

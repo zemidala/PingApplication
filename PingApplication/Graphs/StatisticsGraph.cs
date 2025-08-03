@@ -14,54 +14,98 @@ public class StatisticsGraph : GraphBase
         var canvasWidth = canvas.ActualWidth;
         var canvasHeight = canvas.ActualHeight;
         double margin = 40;
-        double topMargin = 40; // Уменьшенный верхний отступ
+        double topMargin = 40;
+
+        // Проверяем, что размеры корректны
+        if (canvasWidth <= 0 || canvasHeight <= 0) return;
+
         canvas.Children.Clear();
         DrawBackground(canvas, canvasWidth, canvasHeight);
-        // Рисуем точечную сетку
+
+        // ВСЕГДА рисуем сетку и оси
         DrawGrid(canvas, margin, canvasWidth - margin, topMargin, canvasHeight - margin, 10);
         DrawAxes(canvas, margin, canvasWidth - margin, topMargin, canvasHeight - margin);
-        // Обрабатываем null как пустой список
-        if (results == null) results = new List<PingResult>();
+
+        // ВСЕГДА рисуем шкалы
+        DrawScales(canvas, margin, topMargin, canvasWidth, canvasHeight, 10);
+
+        // Только если есть данные, рисуем столбцы
+        if (results == null || results.Count == 0) return;
+
         var successCount = results.Count(r => r.IsSuccess);
         var failCount = results.Count(r => !r.IsSuccess);
         var totalCount = results.Count;
         double barWidth = 60; // Фиксированная ширина столбиков
+
         // Высота доступной области для графика (полная высота)
         var availableHeight = canvasHeight - topMargin - margin;
-        var maxCount = Math.Max(1, Math.Max(successCount, failCount));
+
+        // Убеждаемся, что высота не отрицательна
+        availableHeight = Math.Max(0, availableHeight);
+
         // Рассчитываем высоты столбиков (используем полную высоту без сжатия)
-        var successHeight = totalCount > 0 ? availableHeight * successCount / totalCount : 0;
-        var successRect = new Rectangle
+        double successHeight = 0;
+        double failHeight = 0;
+
+        if (totalCount > 0 && availableHeight > 0)
         {
-            Width = barWidth,
-            Height = successHeight,
-            Fill = Brushes.Green
-        };
+            // Используем общее количество для пропорционального расчета
+            successHeight = availableHeight * successCount / totalCount;
+            failHeight = availableHeight * failCount / totalCount;
+        }
+
+        // Убеждаемся, что высоты не отрицательны
+        successHeight = Math.Max(0, successHeight);
+        failHeight = Math.Max(0, failHeight);
+
         // Позиционируем столбцы по центру
         var centerX = canvasWidth / 2;
         double spacing = 100; // Расстояние между столбцами
         var successX = centerX - spacing / 2 - barWidth / 2; // Левый столбец
         var failX = centerX + spacing / 2 - barWidth / 2; // Правый столец
+
+        // Высоты не должны превышать доступную область
+        successHeight = Math.Min(successHeight, availableHeight);
+        failHeight = Math.Min(failHeight, availableHeight);
+
         var successY = canvasHeight - margin - successHeight;
-        Canvas.SetLeft(successRect, successX);
-        Canvas.SetTop(successRect, successY);
-        canvas.Children.Add(successRect);
-        var failHeight = totalCount > 0 ? availableHeight * failCount / totalCount : 0;
-        var failRect = new Rectangle
-        {
-            Width = barWidth,
-            Height = failHeight,
-            Fill = Brushes.Red
-        };
         var failY = canvasHeight - margin - failHeight;
-        Canvas.SetLeft(failRect, failX);
-        Canvas.SetTop(failRect, failY);
-        canvas.Children.Add(failRect);
+
+        // Создаем и рисуем зеленый столбец (успешные пинги)
+        if (successHeight > 0)
+        {
+            var successRect = new Rectangle
+            {
+                Width = barWidth,
+                Height = successHeight,
+                Fill = Brushes.Green
+            };
+            Canvas.SetLeft(successRect, successX);
+            Canvas.SetTop(successRect, successY);
+            canvas.Children.Add(successRect);
+        }
+
+        // Создаем и рисуем красный столбец (неуспешные пинги)
+        if (failHeight > 0)
+        {
+            var failRect = new Rectangle
+            {
+                Width = barWidth,
+                Height = failHeight,
+                Fill = Brushes.Red
+            };
+            Canvas.SetLeft(failRect, failX);
+            Canvas.SetTop(failRect, failY);
+            canvas.Children.Add(failRect);
+        }
+
         // Рассчитываем проценты
         var successPercent = totalCount > 0 ? Math.Round((double)successCount / totalCount * 100, 1) : 0;
         var failPercent = totalCount > 0 ? Math.Round((double)failCount / totalCount * 100, 1) : 0;
+
         // Добавляем блоки со значениями НАД столбцами (внутри области графика)
         AddValueBlocks(canvas, successX, failX, barWidth, successY, failY, successCount, failCount);
+
         // Ярлыки под столбиками - строго по центру столбцов
         var successText = new TextBlock
         {
@@ -74,6 +118,7 @@ public class StatisticsGraph : GraphBase
         Canvas.SetLeft(successText, successX + barWidth / 2 - MeasureTextWidth(successText.Text, successText) / 2);
         Canvas.SetTop(successText, canvasHeight - margin + 5); // Под столбиком
         canvas.Children.Add(successText);
+
         var failText = new TextBlock
         {
             Text = $"Не успешно: {failPercent:F1}%",
@@ -85,6 +130,7 @@ public class StatisticsGraph : GraphBase
         Canvas.SetLeft(failText, failX + barWidth / 2 - MeasureTextWidth(failText.Text, failText) / 2);
         Canvas.SetTop(failText, canvasHeight - margin + 5); // Под столбиком
         canvas.Children.Add(failText);
+
         DrawScales(canvas, margin, topMargin, canvasWidth, canvasHeight, Math.Max(successCount, failCount));
     }
 
@@ -104,6 +150,7 @@ public class StatisticsGraph : GraphBase
         var successTextHeight = MeasureTextHeight(successValueText.Text, successValueText);
         var successBlockWidth = Math.Max(successTextWidth + 10, 30); // Минимум 30 пикселей
         var successBlockHeight = Math.Max(successTextHeight + 6, 20); // Минимум 20 пикселей
+
         // Фоновый прямоугольник для значения зеленого столбца
         var successValueBlock = new Rectangle
         {
@@ -116,11 +163,13 @@ public class StatisticsGraph : GraphBase
         Canvas.SetLeft(successValueBlock, successX + barWidth / 2 - successBlockWidth / 2);
         Canvas.SetTop(successValueBlock, successY - successBlockHeight - 2); // Ближе к столбцу
         canvas.Children.Add(successValueBlock);
+
         // Текст значения зеленого столбца
         Canvas.SetLeft(successValueText, successX + barWidth / 2 - successTextWidth / 2);
         Canvas.SetTop(successValueText,
             successY - successBlockHeight + (successBlockHeight - successTextHeight) / 2 - 2);
         canvas.Children.Add(successValueText);
+
         // Блок со значением для красного столбца
         var failValueText = new TextBlock
         {
@@ -134,6 +183,7 @@ public class StatisticsGraph : GraphBase
         var failTextHeight = MeasureTextHeight(failValueText.Text, failValueText);
         var failBlockWidth = Math.Max(failTextWidth + 10, 30); // Минимум 30 пикселей
         var failBlockHeight = Math.Max(failTextHeight + 6, 20); // Минимум 20 пикселей
+
         // Фоновый прямоугольник для значения красного столбца
         var failValueBlock = new Rectangle
         {
@@ -146,6 +196,7 @@ public class StatisticsGraph : GraphBase
         Canvas.SetLeft(failValueBlock, failX + barWidth / 2 - failBlockWidth / 2);
         Canvas.SetTop(failValueBlock, failY - failBlockHeight - 2); // Ближе к столбцу
         canvas.Children.Add(failValueBlock);
+
         // Текст значения красного столбца
         Canvas.SetLeft(failValueText, failX + barWidth / 2 - failTextWidth / 2);
         Canvas.SetTop(failValueText, failY - failBlockHeight + (failBlockHeight - failTextHeight) / 2 - 2);
@@ -186,11 +237,16 @@ public class StatisticsGraph : GraphBase
     {
         var width = right - left;
         var height = bottom - top;
+
+        // Проверяем, что размеры положительные
+        if (width <= 0 || height <= 0) return;
+
         // Точечная сетка - только 2 вертикальные линии для 2 столбцов
         var centerX = (left + right) / 2;
         double spacing = 100; // То же расстояние, что и между столбцами
         var successLineX = centerX - spacing / 2; // Линия для левого столбца
         var failLineX = centerX + spacing / 2; // Линия для правого столбца
+
         // Рисуем точки для левой вертикальной линии
         for (var y = top; y <= bottom; y += 4) // Точки каждые 4 пикселя
         {
@@ -243,6 +299,12 @@ public class StatisticsGraph : GraphBase
     private void DrawScales(Canvas canvas, double margin, double topMargin, double canvasWidth, double canvasHeight,
         int maxValue)
     {
+        // Проверяем, что размеры положительные
+        if (canvasWidth <= 0 || canvasHeight <= 0) return;
+
+        var availableHeight = canvasHeight - topMargin - margin;
+        if (availableHeight <= 0) return;
+
         var maxScale = Math.Max(10, (int)Math.Ceiling(Math.Max(maxValue, 5) / 5.0) * 5);
         var step = Math.Max(1, maxScale / 5);
         for (var i = 0; i <= maxScale; i += step)

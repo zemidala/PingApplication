@@ -8,7 +8,10 @@ public abstract class GraphBase
 {
     protected void DrawAxes(Canvas canvas, double left, double right, double top, double bottom)
     {
-        // Ось X (жирная линия)
+        // Проверяем корректность параметров
+        if (left >= right || top >= bottom || left < 0 || top < 0) return;
+
+        // Ось X (жирная линия) - горизонтальная линия внизу
         var xAxis = new Line
         {
             X1 = left,
@@ -20,7 +23,7 @@ public abstract class GraphBase
         };
         canvas.Children.Add(xAxis);
 
-        // Ось Y (жирная линия)
+        // Ось Y (жирная линия) - вертикальная линия слева
         var yAxis = new Line
         {
             X1 = left,
@@ -33,6 +36,7 @@ public abstract class GraphBase
         canvas.Children.Add(yAxis);
 
         // Стрелки на осях
+        // Стрелка для оси X (вправо)
         var arrowX1 = new Line
         {
             X1 = right - 10,
@@ -55,6 +59,7 @@ public abstract class GraphBase
         };
         canvas.Children.Add(arrowX2);
 
+        // Стрелка для оси Y (вверх)
         var arrowY1 = new Line
         {
             X1 = left - 5,
@@ -80,6 +85,9 @@ public abstract class GraphBase
 
     protected void DrawBackground(Canvas canvas, double width, double height)
     {
+        // Проверяем корректность размеров
+        if (width <= 0 || height <= 0) return;
+
         var background = new Rectangle
         {
             Width = width,

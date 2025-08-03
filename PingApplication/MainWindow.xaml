@@ -10,7 +10,7 @@
         </Grid.RowDefinitions>
 
         <!-- Вкладки -->
-        <TabControl Grid.Row="0" Height="40" SelectionChanged="TabControl_SelectionChanged">
+        <TabControl Grid.Row="0" Height="40" Name="MainTabControl" SelectionChanged="TabControl_SelectionChanged">
             <TabItem Header="Ping 1" Tag="Ping1"/>
             <TabItem Header="Ping 2" Tag="Ping2"/>
             <TabItem Header="Ping 3" Tag="Ping3"/>
