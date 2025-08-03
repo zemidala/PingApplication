@@ -1,7 +1,8 @@
 ﻿<Window x:Class="PingApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Ping Application" Height="800" Width="1200">
+        Title="Ping Application" Height="800" Width="1200"
+        Loaded="WindowLoaded">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -96,8 +97,67 @@
             </Grid>
 
             <!-- Содержимое для настроек -->
+            <!-- Содержимое для настроек -->
             <Grid Name="SettingsContent" Visibility="Collapsed">
-                <TextBlock Text="Настройки" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="250"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Дерево настроек (левая панель) -->
+                <TreeView Grid.Column="0" Name="SettingsTreeView" SelectedItemChanged="SettingsTreeView_SelectedItemChanged" Margin="5">
+                    <TreeViewItem Header="Общие настройки" Tag="General">
+                        <TreeViewItem Header="Запуск и закрытие программы" Tag="Startup"/>
+                        <TreeViewItem Header="Ярлыки" Tag="Shortcuts"/>
+                    </TreeViewItem>
+                    <TreeViewItem Header="Вид" Tag="View">
+                        <TreeViewItem Header="Панель пингования" Tag="PingPanel"/>
+                    </TreeViewItem>
+                    <TreeViewItem Header="Настройки пингования" Tag="PingSettings">
+                        <TreeViewItem Header="Настройки пингования" Tag="PingConfig"/>
+                        <TreeViewItem Header="Список пингования" Tag="PingList"/>
+                        <TreeViewItem Header="Логи" Tag="Logs"/>
+                    </TreeViewItem>
+                </TreeView>
+
+                <!-- Панель настроек (правая панель) -->
+                <Grid Grid.Column="1" Margin="0,0,10,10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Заголовок настроек -->
+                    <TextBlock Grid.Row="0" Name="SettingsTitle" Text="Настройки" 
+                   HorizontalAlignment="Left" VerticalAlignment="Center"
+                   FontSize="16" FontWeight="Bold" 
+                   Margin="15,10,0,5"/>
+
+                    <!-- Область настроек с бордером -->
+                    <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" 
+                Margin="10,0,0,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Область настроек с прокруткой -->
+                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Margin="10">
+                                <StackPanel Name="SettingsPanel">
+                                    <!-- Здесь будут отображаться настройки -->
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <!-- Кнопки действий -->
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,10,10">
+                                <Button Content="Применить" Width="100" Margin="0,0,10,0" Click="ApplySettings_Click"/>
+                                <Button Content="Отмена" Width="100" Margin="0,0,10,0" Click="CancelSettings_Click"/>
+                                <Button Content="По умолчанию" Width="100" Click="DefaultSettings_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Grid>
         </Grid>
     </Grid>

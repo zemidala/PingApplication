@@ -71,8 +71,7 @@ public class ProgressGraph : GraphBase
         var currentY = topMargin + 4 * lineHeightSpacing;
         DrawProgressLine(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, currentY, currentTime, minTime,
             maxTime, Brushes.Blue, "Текущее.", currentTime, labelAreaRightEdge);
-        // Рисуем только шкалу по оси X (без оси Y)
-        DrawXScales(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, canvasWidth, canvasHeight, topMargin,
+        DrawScales(canvas, labelAreaRightEdge, labelAreaRightEdge + graphWidth, canvasWidth, canvasHeight, topMargin,
             bottomMargin, minTime, maxTime);
     }
 
@@ -171,17 +170,59 @@ public class ProgressGraph : GraphBase
         Canvas.SetLeft(labelText, labelAreaRightEdge - MeasureTextWidth(label) - 10); // Выровнен по правому краю
         Canvas.SetTop(labelText, y - 7);
         canvas.Children.Add(labelText);
-        // Добавляем числовое значение на конце линии
-        var valueText = new TextBlock
+        // Добавляем числовое значение на конце линии в прямоугольнике с контрастной заливкой
+        AddValueBox(canvas, xPosition, y, displayValue, color);
+    }
+
+    // Новый метод для добавления прямоугольника со значением
+    private void AddValueBox(Canvas canvas, double xPosition, double y, double displayValue, Brush color)
+    {
+        var valueText = $"{displayValue:F0} ms";
+        var formattedText = new FormattedText(
+            valueText,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            new Typeface("Segoe UI"),
+            10,
+            Brushes.White, // Белый текст для контраста
+            new NumberSubstitution(),
+            1.0);
+        var textWidth = formattedText.Width;
+        var textHeight = formattedText.Height;
+        // Размеры прямоугольника с небольшим отступом
+        var boxWidth = textWidth + 10;
+        var boxHeight = textHeight + 4;
+        // Создаем прямоугольник с контрастной заливкой (цвет линии, но немного темнее)
+        var box = new Rectangle
         {
-            Text = $"{displayValue:F0} ms",
-            Foreground = color,
-            FontSize = 10,
-            FontWeight = FontWeights.Bold
+            Width = boxWidth,
+            Height = boxHeight,
+            Fill = new SolidColorBrush(Color.FromArgb(200, // Полупрозрачный
+                ((SolidColorBrush)color).Color.R,
+                ((SolidColorBrush)color).Color.G,
+                ((SolidColorBrush)color).Color.B)),
+            Stroke = color,
+            StrokeThickness = 1,
+            RadiusX = 3, // Скругленные углы
+            RadiusY = 3
         };
-        Canvas.SetLeft(valueText, xPosition + 8);
-        Canvas.SetTop(valueText, y - 7);
-        canvas.Children.Add(valueText);
+        // Позиционируем прямоугольник немного правее и выше маркера
+        Canvas.SetLeft(box, xPosition + 10);
+        Canvas.SetTop(box, y - boxHeight / 2);
+        canvas.Children.Add(box);
+        // Добавляем текст значения
+        var textBlock = new TextBlock
+        {
+            Text = valueText,
+            FontSize = 10,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White, // Белый текст для контраста
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Canvas.SetLeft(textBlock, xPosition + 10 + (boxWidth - textWidth) / 2);
+        Canvas.SetTop(textBlock, y - boxHeight / 2 + (boxHeight - textHeight) / 2);
+        canvas.Children.Add(textBlock);
     }
 
     // Метод для измерения ширины текста
@@ -266,8 +307,7 @@ public class ProgressGraph : GraphBase
         canvas.Children.Add(labelText);
     }
 
-    // Новый метод для рисования только шкалы по оси X
-    private void DrawXScales(Canvas canvas, double left, double right, double canvasWidth, double canvasHeight,
+    private void DrawScales(Canvas canvas, double left, double right, double canvasWidth, double canvasHeight,
         double topMargin, double bottomMargin, double minTime, double maxTime)
     {
         // Шкала по оси X (время) - ЦЕНТРИРОВАНИЕ ТЕКСТА ОТНОСИТЕЛЬНО РИСОК

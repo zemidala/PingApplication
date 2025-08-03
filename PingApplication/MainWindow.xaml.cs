@@ -1,15 +1,23 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
 using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using System.Windows.Threading;
 using PingApp.Graphs;
 using PingApp.Models;
+using PingApp.ViewModels;
 
 namespace PingApp;
 
 public partial class MainWindow : Window
 {
+    // ViewModel для настроек
+    private readonly SettingsViewModel _settingsViewModel;
     private string _currentTab = "Ping1";
     private bool _isPinging;
 
@@ -26,15 +34,14 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _settingsViewModel = new SettingsViewModel();
+        _settingsViewModel.PropertyChanged += SettingsViewModel_PropertyChanged;
         InitializeTabData();
         InitializeHosts();
         InitializePingingStates();
-
-        // Инициализируем графики для текущей вкладки при запуске
-        Loaded += MainWindow_Loaded;
     }
 
-    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    private void WindowLoaded(object sender, RoutedEventArgs e)
     {
         // Инициализируем пустые графики для всех вкладок после загрузки окна
         InitializeAllGraphsWithGrids();
@@ -117,7 +124,7 @@ public partial class MainWindow : Window
             // Временно устанавливаем текущую вкладку для корректной отрисовки
             _currentTab = tabName;
 
-            // Инициализируем графики с пустыми данными (они нарисуют сетку и оси)
+            // Инициализируем графики с пустыми данными
             tabData.PingGraph.Draw(MainPingCanvas, results);
             tabData.ProgressGraph.Draw(ProgressCanvas, results);
             tabData.StatisticsGraph.Draw(StatisticsCanvas, results);
@@ -294,12 +301,6 @@ public partial class MainWindow : Window
 
         // Запускаем первый пинг сразу
         timer.Start();
-        timer_Tick(timer, EventArgs.Empty);
-    }
-
-    private async void timer_Tick(object sender, EventArgs e)
-    {
-        // Этот метод будет вызван через await для первого пинга
     }
 
     private void UpdateStatusText(PingResult result)
@@ -335,6 +336,509 @@ public partial class MainWindow : Window
         currentTabData.PingGraph.Draw(MainPingCanvas, results);
         currentTabData.ProgressGraph.Draw(ProgressCanvas, results);
         currentTabData.StatisticsGraph.Draw(StatisticsCanvas, results);
+    }
+
+    // Методы для работы с настройками
+    private void SettingsTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        if (e.NewValue is TreeViewItem item) ShowSettingsPanel(item.Tag?.ToString());
+    }
+
+    private void ShowSettingsPanel(string category)
+    {
+        SettingsPanel.Children.Clear();
+
+        switch (category)
+        {
+            case "Startup":
+                SettingsTitle.Text = "Запуск и закрытие программы";
+                ShowStartupSettings();
+                break;
+            case "Shortcuts":
+                SettingsTitle.Text = "Ярлыки";
+                ShowShortcutsSettings();
+                break;
+            case "PingPanel":
+                SettingsTitle.Text = "Панель пингования";
+                ShowPingPanelSettings();
+                break;
+            case "PingConfig":
+                SettingsTitle.Text = "Настройки пингования";
+                ShowPingConfigSettings();
+                break;
+            case "PingList":
+                SettingsTitle.Text = "Список пингования";
+                ShowPingListSettings();
+                break;
+            case "Logs":
+                SettingsTitle.Text = "Логи";
+                ShowLogsSettings();
+                break;
+            default:
+                SettingsTitle.Text = "Настройки";
+                break;
+        }
+    }
+
+    private void ShowStartupSettings()
+    {
+        // Создаем стек панель для настроек запуска
+        var startupPanel = new StackPanel();
+
+        // Старт программы вместе с Windows
+        var autoStartPanel = new StackPanel
+            { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 15) };
+        var autoStartCheckBox = new CheckBox
+        {
+            Content = "Старт программы вместе с Windows (Автозагрузка)",
+            IsChecked = _settingsViewModel.AutoStartWindows,
+            Margin = new Thickness(0, 0, 10, 0)
+        };
+        autoStartCheckBox.Checked += (s, e) => _settingsViewModel.AutoStartWindows = true;
+        autoStartCheckBox.Unchecked += (s, e) => _settingsViewModel.AutoStartWindows = false;
+        autoStartPanel.Children.Add(autoStartCheckBox);
+        startupPanel.Children.Add(autoStartPanel);
+
+        // При старте, сворачивать в "трей"
+        var minimizeToTrayPanel = new StackPanel
+            { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 15) };
+        var minimizeToTrayCheckBox = new CheckBox
+        {
+            Content = "При старте, сворачивать в \"трей\" (к часам)",
+            IsChecked = _settingsViewModel.MinimizeOnStart,
+            Margin = new Thickness(0, 0, 10, 0)
+        };
+        minimizeToTrayCheckBox.Checked += (s, e) => _settingsViewModel.MinimizeOnStart = true;
+        minimizeToTrayCheckBox.Unchecked += (s, e) => _settingsViewModel.MinimizeOnStart = false;
+        minimizeToTrayPanel.Children.Add(minimizeToTrayCheckBox);
+        startupPanel.Children.Add(minimizeToTrayPanel);
+
+        // При нажатии кнопку "Закрыть", сворачивать в "Трей"
+        var closeToTrayPanel = new StackPanel
+            { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 15) };
+        var closeToTrayCheckBox = new CheckBox
+        {
+            Content = "При нажатии кнопку \"Закрыть\" (Х), сворачивать в \"Трей\" (к часам)",
+            IsChecked = _settingsViewModel.ConfirmExit,
+            Margin = new Thickness(0, 0, 10, 0)
+        };
+        closeToTrayCheckBox.Checked += (s, e) => _settingsViewModel.ConfirmExit = true;
+        closeToTrayCheckBox.Unchecked += (s, e) => _settingsViewModel.ConfirmExit = false;
+        closeToTrayPanel.Children.Add(closeToTrayCheckBox);
+        startupPanel.Children.Add(closeToTrayPanel);
+
+        SettingsPanel.Children.Add(startupPanel);
+    }
+
+    private void ShowShortcutsSettings()
+    {
+        // Создаем бордер для секции настроек
+        var border = new Border
+        {
+            BorderBrush = Brushes.Gray,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(10),
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+
+        // Создаем стек панель для настроек ярлыков
+        var shortcutsPanel = new StackPanel();
+
+        // Поместить ярлык в меню "Быстрый запуск"
+        var quickLaunchPanel = new StackPanel
+            { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 10) };
+        var quickLaunchCheckBox = new CheckBox
+        {
+            Content = "Поместить ярлык в меню \"Быстрый запуск\"",
+            IsChecked = false, // Значение по умолчанию
+            Margin = new Thickness(0, 0, 10, 0)
+        };
+        quickLaunchPanel.Children.Add(quickLaunchCheckBox);
+        shortcutsPanel.Children.Add(quickLaunchPanel);
+
+        // Поместить ярлык в меню "Программы"
+        var programsMenuPanel = new StackPanel
+            { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 10) };
+        var programsMenuCheckBox = new CheckBox
+        {
+            Content = "Поместить ярлык в меню \"Программы\"",
+            IsChecked = false, // Значение по умолчанию
+            Margin = new Thickness(0, 0, 10, 0)
+        };
+        programsMenuPanel.Children.Add(programsMenuCheckBox);
+        shortcutsPanel.Children.Add(programsMenuPanel);
+
+        // Поместить ярлык на "рабочий стол"
+        var desktopPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 10) };
+        var desktopCheckBox = new CheckBox
+        {
+            Content = "Поместить ярлык на \"рабочий стол\"",
+            IsChecked = false, // Значение по умолчанию
+            Margin = new Thickness(0, 0, 10, 0)
+        };
+        desktopPanel.Children.Add(desktopCheckBox);
+        shortcutsPanel.Children.Add(desktopPanel);
+
+        border.Child = shortcutsPanel;
+        SettingsPanel.Children.Add(border);
+    }
+
+    private void ShowPingPanelSettings()
+    {
+        // Создаем бордер для секции настроек
+        var border = new Border
+        {
+            BorderBrush = Brushes.Gray,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(10),
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+
+        // Создаем стек панель для настроек панели пингования
+        var pingPanelSettings = new StackPanel();
+
+        // Число графических панелей пингования
+        var panelCountPanel = new StackPanel
+            { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 10) };
+        var panelCountLabel = new TextBlock
+        {
+            Text = "Число графических панелей пингования:",
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 10, 0),
+            Width = 250
+        };
+
+        var panelCountComboBox = new ComboBox { Width = 60 };
+        for (var i = 1; i <= 5; i++) panelCountComboBox.Items.Add(i.ToString());
+        panelCountComboBox.SelectedIndex = 2; // По умолчанию 3
+
+        panelCountPanel.Children.Add(panelCountLabel);
+        panelCountPanel.Children.Add(panelCountComboBox);
+        pingPanelSettings.Children.Add(panelCountPanel);
+
+        border.Child = pingPanelSettings;
+        SettingsPanel.Children.Add(border);
+    }
+
+    private void ShowPingConfigSettings()
+    {
+        // Создаем бордер для секции настроек
+        var border = new Border
+        {
+            BorderBrush = Brushes.Gray,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(10),
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+
+        // Создаем стек панель для настроек пингования
+        var pingConfigPanel = new StackPanel();
+
+        // Интервал пингования
+        var intervalPanel = new StackPanel { Margin = new Thickness(0, 0, 0, 15) };
+        var intervalLabel = new TextBlock
+        {
+            Text = "Интервал пингования:",
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+        intervalPanel.Children.Add(intervalLabel);
+
+        // Улучшенный вид для интервала пингования
+        var intervalInputPanel = new StackPanel { Orientation = Orientation.Horizontal };
+
+        // TextBox для ввода значения
+        var intervalValue = new TextBox
+        {
+            Text = "1000",
+            Width = 60,
+            HorizontalContentAlignment = HorizontalAlignment.Right,
+            VerticalContentAlignment = VerticalAlignment.Center
+        };
+
+        // Панель для кнопок со стрелками (сделаем её компактной)
+        var intervalUpDownPanel = new UniformGrid
+        {
+            Rows = 2,
+            Columns = 1,
+            Width = 20,
+            Margin = new Thickness(5, 0, 0, 0)
+        };
+
+        // Кнопка "вверх" с уменьшенным размером и упрощенным видом
+        var intervalUpButton = new Button
+        {
+            Content = "▲",
+            Padding = new Thickness(0),
+            Margin = new Thickness(0, 0, 0, 1), // Небольшой отступ между кнопками
+            FontSize = 8 // Уменьшенный шрифт для стрелки
+        };
+
+        // Кнопка "вниз" с уменьшенным размером и упрощенным видом
+        var intervalDownButton = new Button
+        {
+            Content = "▼",
+            Padding = new Thickness(0),
+            Margin = new Thickness(0, 1, 0, 0), // Небольшой отступ между кнопками
+            FontSize = 8 // Уменьшенный шрифт для стрелки
+        };
+
+        // Обработчики событий для кнопок
+        intervalUpButton.Click += (s, e) =>
+        {
+            if (int.TryParse(intervalValue.Text, out var value) && value < 10000)
+                intervalValue.Text = (value + 100).ToString();
+        };
+
+        intervalDownButton.Click += (s, e) =>
+        {
+            if (int.TryParse(intervalValue.Text, out var value) && value > 100)
+                intervalValue.Text = (value - 100).ToString();
+        };
+
+        intervalUpDownPanel.Children.Add(intervalUpButton);
+        intervalUpDownPanel.Children.Add(intervalDownButton);
+
+        intervalInputPanel.Children.Add(intervalValue);
+        intervalInputPanel.Children.Add(intervalUpDownPanel);
+
+        var intervalUnitLabel = new TextBlock
+        {
+            Text = "мс",
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(10, 0, 0, 0)
+        };
+        intervalInputPanel.Children.Add(intervalUnitLabel);
+
+        intervalPanel.Children.Add(intervalInputPanel);
+        pingConfigPanel.Children.Add(intervalPanel);
+
+        // Пинговать без остановки
+        var continuousPingPanel = new StackPanel
+            { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 15) };
+        var continuousPingCheckBox = new CheckBox
+        {
+            Content = "Пинговать без остановки",
+            IsChecked = true, // По умолчанию включен
+            Margin = new Thickness(0, 0, 10, 0)
+        };
+        continuousPingPanel.Children.Add(continuousPingCheckBox);
+        pingConfigPanel.Children.Add(continuousPingPanel);
+
+        // Пингов на страницу (аналогично улучшим внешний вид)
+        var pingsPerPagePanel = new StackPanel { Margin = new Thickness(0, 0, 0, 15) };
+        var pingsPerPageLabel = new TextBlock
+        {
+            Text = "Пингов на страницу:",
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+        pingsPerPagePanel.Children.Add(pingsPerPageLabel);
+
+        var pingsPerPageInputPanel = new StackPanel { Orientation = Orientation.Horizontal };
+        var pingsPerPageValue = new TextBox
+        {
+            Text = "30",
+            Width = 60,
+            HorizontalContentAlignment = HorizontalAlignment.Right,
+            VerticalContentAlignment = VerticalAlignment.Center
+        };
+
+        var pingsPerPageUpDownPanel = new UniformGrid
+        {
+            Rows = 2,
+            Columns = 1,
+            Width = 20,
+            Margin = new Thickness(5, 0, 0, 0)
+        };
+
+        var pingsPerPageUpButton = new Button
+        {
+            Content = "▲",
+            Padding = new Thickness(0),
+            Margin = new Thickness(0, 0, 0, 1),
+            FontSize = 8
+        };
+
+        var pingsPerPageDownButton = new Button
+        {
+            Content = "▼",
+            Padding = new Thickness(0),
+            Margin = new Thickness(0, 1, 0, 0),
+            FontSize = 8
+        };
+
+        pingsPerPageUpButton.Click += (s, e) =>
+        {
+            if (int.TryParse(pingsPerPageValue.Text, out var value) && value < 100)
+                pingsPerPageValue.Text = (value + 1).ToString();
+        };
+
+        pingsPerPageDownButton.Click += (s, e) =>
+        {
+            if (int.TryParse(pingsPerPageValue.Text, out var value) && value > 1)
+                pingsPerPageValue.Text = (value - 1).ToString();
+        };
+
+        pingsPerPageUpDownPanel.Children.Add(pingsPerPageUpButton);
+        pingsPerPageUpDownPanel.Children.Add(pingsPerPageDownButton);
+
+        pingsPerPageInputPanel.Children.Add(pingsPerPageValue);
+        pingsPerPageInputPanel.Children.Add(pingsPerPageUpDownPanel);
+
+        pingsPerPagePanel.Children.Add(pingsPerPageInputPanel);
+        pingConfigPanel.Children.Add(pingsPerPagePanel);
+
+        border.Child = pingConfigPanel;
+        SettingsPanel.Children.Add(border);
+    }
+
+    private void ShowPingListSettings()
+    {
+        // Создаем бордер для секции настроек
+        var border = new Border
+        {
+            BorderBrush = Brushes.Gray,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(10),
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+
+        // Создаем стек панель для списка пингования
+        var pingListPanel = new StackPanel();
+
+        // Форма добавления
+        var addFormPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+        var addressInput = new TextBox
+        {
+            Width = 200,
+            Text = "Введите адрес...",
+            Foreground = Brushes.Gray
+        };
+
+        addressInput.GotFocus += (s, e) =>
+        {
+            if (addressInput.Text == "Введите адрес...")
+            {
+                addressInput.Text = "";
+                addressInput.Foreground = Brushes.Black;
+            }
+        };
+
+        addressInput.LostFocus += (s, e) =>
+        {
+            if (string.IsNullOrWhiteSpace(addressInput.Text))
+            {
+                addressInput.Text = "Введите адрес...";
+                addressInput.Foreground = Brushes.Gray;
+            }
+        };
+
+        var addButton = new Button { Content = "Добавить", Width = 80, Margin = new Thickness(10, 0, 0, 0) };
+        var removeButton = new Button { Content = "Удалить", Width = 80, Margin = new Thickness(10, 0, 0, 0) };
+        var updateButton = new Button { Content = "Обновить", Width = 80, Margin = new Thickness(10, 0, 0, 0) };
+
+        addFormPanel.Children.Add(addressInput);
+        addFormPanel.Children.Add(addButton);
+        addFormPanel.Children.Add(removeButton);
+        addFormPanel.Children.Add(updateButton);
+
+        pingListPanel.Children.Add(addFormPanel);
+
+        // Список адресов
+        var addressesListBox = new ListBox
+        {
+            Height = 150,
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+
+        // Добавляем примеры адресов
+        addressesListBox.Items.Add("yandex.ru");
+        addressesListBox.Items.Add("google.com");
+        addressesListBox.Items.Add("github.com");
+
+        pingListPanel.Children.Add(addressesListBox);
+
+        border.Child = pingListPanel;
+        SettingsPanel.Children.Add(border);
+    }
+
+    private void ShowLogsSettings()
+    {
+        // Создаем бордер для секции настроек
+        var border = new Border
+        {
+            BorderBrush = Brushes.Gray,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(10),
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+
+        // Создаем стек панель для настроек логов
+        var logsPanel = new StackPanel();
+
+        // Запись результатов пингования
+        var logCheckboxPanel = new StackPanel
+            { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 15) };
+        var logCheckBox = new CheckBox
+        {
+            Content = "Записывать результаты в лог файлы",
+            IsChecked = _settingsViewModel.SaveLogs,
+            Margin = new Thickness(0, 0, 10, 0)
+        };
+        logCheckBox.Checked += (s, e) => _settingsViewModel.SaveLogs = true;
+        logCheckBox.Unchecked += (s, e) => _settingsViewModel.SaveLogs = false;
+        logCheckboxPanel.Children.Add(logCheckBox);
+        logsPanel.Children.Add(logCheckboxPanel);
+
+        // Путь к лог файлам
+        var pathPanel = new StackPanel { Margin = new Thickness(0, 0, 0, 15) };
+        var pathLabel = new TextBlock
+        {
+            Text = "Путь к лог файлам:",
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+        pathPanel.Children.Add(pathLabel);
+
+        var pathInputPanel = new StackPanel { Orientation = Orientation.Horizontal };
+        var pathTextBox = new TextBox
+        {
+            Text = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+            Width = 300,
+            Margin = new Thickness(0, 0, 10, 0)
+        };
+
+        var browseButton = new Button { Content = "Обзор...", Width = 80 };
+
+        pathInputPanel.Children.Add(pathTextBox);
+        pathInputPanel.Children.Add(browseButton);
+
+        pathPanel.Children.Add(pathInputPanel);
+        logsPanel.Children.Add(pathPanel);
+
+        border.Child = logsPanel;
+        SettingsPanel.Children.Add(border);
+    }
+
+    private void SettingsViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        // Здесь можно добавить логику реагирования на изменения настроек
+    }
+
+    private void ApplySettings_Click(object sender, RoutedEventArgs e)
+    {
+        // Здесь будет логика применения настроек
+        MessageBox.Show("Настройки применены");
+    }
+
+    private void CancelSettings_Click(object sender, RoutedEventArgs e)
+    {
+        // Здесь будет логика отмены изменений
+        MessageBox.Show("Изменения отменены");
+    }
+
+    private void DefaultSettings_Click(object sender, RoutedEventArgs e)
+    {
+        // Здесь будет логика сброса настроек по умолчанию
+        MessageBox.Show("Настройки сброшены к значениям по умолчанию");
     }
 }
 
